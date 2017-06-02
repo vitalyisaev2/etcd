@@ -507,6 +507,7 @@ func (r *raft) reset(term uint64) {
 		}
 	}
 	r.pendingConf = false
+	r.logger.Warningf("PENDING_CONF: raft.reset: %v", r.pendingConf)
 	r.readOnly = newReadOnly(r.readOnly.option)
 }
 
@@ -615,6 +616,7 @@ func (r *raft) becomeLeader() {
 	}
 	if nconf == 1 {
 		r.pendingConf = true
+		r.logger.Warningf("PENDING_CONF: raft.becomeLeader: %v", r.pendingConf)
 	}
 
 	r.appendEntry(pb.Entry{Data: nil})
@@ -816,6 +818,7 @@ func stepLeader(r *raft, m pb.Message) {
 					m.Entries[i] = pb.Entry{Type: pb.EntryNormal}
 				}
 				r.pendingConf = true
+				r.logger.Warningf("PENDING_CONF: raft.stepLeader: %v", r.pendingConf)
 			}
 		}
 		r.appendEntry(m.Entries...)
@@ -1152,6 +1155,7 @@ func (r *raft) promotable() bool {
 
 func (r *raft) addNode(id uint64) {
 	r.pendingConf = false
+	r.logger.Warningf("PENDING_CONF: raft.addNode: %v", r.pendingConf)
 	if _, ok := r.prs[id]; ok {
 		// Ignore any redundant addNode calls (which can happen because the
 		// initial bootstrapping entries are applied twice).
@@ -1167,6 +1171,7 @@ func (r *raft) addNode(id uint64) {
 
 func (r *raft) removeNode(id uint64) {
 	r.delProgress(id)
+	r.logger.Warningf("PENDING_CONF: raft.removeNode: %v", r.pendingConf)
 	r.pendingConf = false
 
 	// do not try to commit or abort transferring if there is no nodes in the cluster.
@@ -1185,7 +1190,10 @@ func (r *raft) removeNode(id uint64) {
 	}
 }
 
-func (r *raft) resetPendingConf() { r.pendingConf = false }
+func (r *raft) resetPendingConf() {
+	r.pendingConf = false
+	r.logger.Warningf("PENDING_CONF: raft.resetPendingConf: %v", r.pendingConf)
+}
 
 func (r *raft) setProgress(id, match, next uint64) {
 	r.prs[id] = &Progress{Next: next, Match: match, ins: newInflights(r.maxInflight)}
